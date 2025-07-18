@@ -1,22 +1,24 @@
-import { Background } from './background.js';
-
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// สร้างพื้นหลัง พร้อมใส่ path ภาพที่อัปโหลดไว้ใน repo ของคุณ
-const bg = new Background(canvas, 'images/bg.png');
+// ✅ เปลี่ยน path ได้ตรงนี้
+const background = new Image();
+background.src = "../images/bg.png";
 
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+background.onload = () => {
+  const bgOriginalWidth = background.width;
+  const bgOriginalHeight = background.height;
 
-  bg.draw();
+  // ให้พื้นหลังเต็มขอบซ้ายขวา แต่สูงต่ำลง
+  const scaleRatio = canvas.width / bgOriginalWidth;
+  const bgWidth = canvas.width;
+  const bgHeight = (bgOriginalHeight * scaleRatio) / 2;
 
-  // เพิ่มโค้ดวาดตัวละคร หรือสิ่งอื่น ๆ ที่นี่ในอนาคต
+  const x = 0;
+  const y = (canvas.height - bgHeight) / 2;
 
-  requestAnimationFrame(gameLoop);
-}
-
-gameLoop();
+  ctx.drawImage(background, x, y, bgWidth, bgHeight);
+};
