@@ -9,21 +9,16 @@ window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 const background = new Image();
-background.src = "../images/bg.png"; // ตรวจสอบว่าที่อยู่ถูกต้อง
+background.src = "../images/bg.png"; // เปลี่ยน path ให้ตรง
 
 background.onload = () => {
   draw();
 };
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const imgRatio = background.width / background.height;
-  const targetWidth = canvas.width;
-  const targetHeight = canvas.width / imgRatio;
-
-  const drawHeight = targetHeight * 0.5; // ปรับแค่ส่วนนี้เพื่อเพิ่ม/ลดความสูงของภาพ
+  const scale = canvas.width / background.width;
+  const drawHeight = background.height * scale / 2; // ลดความสูงลงครึ่ง
   const y = (canvas.height - drawHeight) / 2;
-
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(background, 0, y, canvas.width, drawHeight);
 }
