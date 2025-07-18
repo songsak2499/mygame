@@ -34,8 +34,11 @@ const animations = {
   run: { image: playerRun, totalFrames: 7 }
 };
 
-// ✅ ตัวแปรควบคุมการเดิน
-let isRunning = false;
+// ✅ ควบคุมทิศทาง
+let isRunningLeft = false;
+let isRunningRight = false;
+let moveSpeed = 2;
+let facingLeft = false; // ไว้สำหรับพลิกภาพถ้าจะใช้ภายหลัง
 
 // วาดฉากและตัวละคร
 function draw(deltaTime) {
@@ -63,16 +66,35 @@ function draw(deltaTime) {
   const anim = animations[currentAnimation];
   const sx = currentFrame * frameWidth;
 
-  // ✅ เดินไปทางขวาถ้ายังแตะปุ่มอยู่
-  if (isRunning) {
-    playerX += 2; // ปรับเลขนี้เพื่อเพิ่ม/ลดความเร็ว
+  // ✅ อัปเดตตำแหน่ง
+  if (isRunningRight) {
+    playerX += moveSpeed;
+    facingLeft = false;
+  }
+  if (isRunningLeft) {
+    playerX -= moveSpeed;
+    facingLeft = true;
   }
 
-  ctx.drawImage(
-    anim.image,
-    sx, 0, frameWidth, frameHeight,
-    playerX, playerY, drawPlayerWidth, drawPlayerHeight
-  );
+  // ✅ วาดตัวละคร (พลิกภาพหากหันซ้าย)
+  ctx.save();
+  if (facingLeft) {
+    ctx.scale(-1, 1);
+    ctx.drawImage(
+      anim.image,
+      sx, 0, frameWidth, frameHeight,
+      -(playerX + drawPlayerWidth), playerY,
+      drawPlayerWidth, drawPlayerHeight
+    );
+  } else {
+    ctx.drawImage(
+      anim.image,
+      sx, 0, frameWidth, frameHeight,
+      playerX, playerY,
+      drawPlayerWidth, drawPlayerHeight
+    );
+  }
+  ctx.restore();
 }
 
 // ลูปเกม
@@ -89,6 +111,13 @@ function gameLoop(timestamp) {
     currentFrame = (currentFrame + 1) % totalFrames;
   }
 
+  // ตั้งแอนิเมชันตามสถานะ
+  if (isRunningLeft || isRunningRight) {
+    currentAnimation = "run";
+  } else {
+    currentAnimation = "idle";
+  }
+
   draw(deltaTime);
   requestAnimationFrame(gameLoop);
 }
@@ -103,17 +132,20 @@ background.onload = checkStart;
 playerIdle.onload = checkStart;
 playerRun.onload = checkStart;
 
-// ✅ ปุ่มทัช "เดิน" (id = runButton)
+// ✅ ปุ่มขวา
 const runBtn = document.getElementById("runButton");
 runBtn.addEventListener("touchstart", () => {
-  currentAnimation = "run";
-  currentFrame = 0;
-  frameTimer = 0;
-  isRunning = true; // ✅ เริ่มเดิน
+  isRunningRight = true;
 });
 runBtn.addEventListener("touchend", () => {
-  currentAnimation = "idle";
-  currentFrame = 0;
-  frameTimer = 0;
-  isRunning = false; // ✅ หยุดเดิน
+  isRunningRight = false;
+});
+
+// ✅ ปุ่มซ้าย
+const leftBtn = document.getElementById("leftButton");
+leftBtn.addEventListener("touchstart", () => {
+  isRunningLeft = true;
+});
+leftBtn.addEventListener("touchend", () => {
+  isRunningLeft = false;
 });
