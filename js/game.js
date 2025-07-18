@@ -17,6 +17,12 @@ playerIdle.src = "images/player_idle.png"; // 400×64 (4 เฟรม)
 const playerRun = new Image();
 playerRun.src = "images/player_run.png";  // 700×64 (7 เฟรม)
 
+const playerAttack = new Image();
+playerAttack.src = "images/player_attack.png"; // 600×64 (6 เฟรม)
+
+const playerJump = new Image();
+playerJump.src = "images/player_jump.png";
+
 let playerX = 100;
 let playerY = 0;
 
@@ -29,13 +35,26 @@ const frameInterval = 150;
 let currentAnimation = "idle";
 const animations = {
   idle: { image: playerIdle, totalFrames: 4 },
-  run: { image: playerRun, totalFrames: 7 }
+  run: { image: playerRun, totalFrames: 7 },
+  attack: { image: playerAttack, totalFrames: 6 },
+  jump: { image: playerJump, totalFrames: 6 }
 };
 
 let isRunningLeft = false;
 let isRunningRight = false;
 let moveSpeed = 2;
 let facingLeft = false;
+let isJumping = false;
+let jumpVelocity = 0;
+const gravity = 0.5;
+const jumpStrength = 10;
+
+let isAttacking = false;
+let attackFinished = true;
+
+let runHoldTimer = 0;
+
+let lastAnimation = currentAnimation;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -61,21 +80,37 @@ function draw(deltaTime) {
   const drawPlayerWidth = frameWidth * scaleFactor;
   const drawPlayerHeight = frameHeight * scaleFactor;
 
-  playerY = groundY - drawPlayerHeight;
+  // เคลื่อนที่แนว Y ขณะกระโดด
+  if (isJumping) {
+    jumpVelocity += gravity;
+    playerY += jumpVelocity;
 
-  if (isRunningRight) {
-    playerX += moveSpeed;
-    facingLeft = false;
+    if (playerY >= groundY - drawPlayerHeight) {
+      playerY = groundY - drawPlayerHeight;
+      isJumping = false;
+      jumpVelocity = 0;
+    }
+  } else {
+    playerY = groundY - drawPlayerHeight;
   }
-  if (isRunningLeft) {
-    playerX -= moveSpeed;
-    facingLeft = true;
+
+  // เคลื่อนที่แนว X ถ้าไม่โจมตี
+  if (!isAttacking) {
+    if (isRunningRight) {
+      playerX += moveSpeed;
+      facingLeft = false;
+    }
+    if (isRunningLeft) {
+      playerX -= moveSpeed;
+      facingLeft = true;
+    }
+
+    playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
   }
 
-  playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
-
+  // เลือก sprite animation ปัจจุบัน
   const anim = animations[currentAnimation];
-  const sx = currentFrame * frameWidth;
+  const sx = Math.min(currentFrame * frameWidth, anim.image.width - frameWidth);
 
   ctx.save();
   if (facingLeft) {
@@ -103,14 +138,38 @@ function gameLoop(timestamp) {
   lastTime = timestamp;
 
   frameTimer += deltaTime;
-  const totalFrames = animations[currentAnimation].totalFrames;
+  runHoldTimer += deltaTime;
 
   if (frameTimer >= frameInterval) {
-    frameTimer -= frameInterval; // ลดเวลาให้ลื่นกว่าเดิม
-    currentFrame = (currentFrame + 1) % totalFrames;
+    frameTimer -= frameInterval;
+    currentFrame = (currentFrame + 1) % animations[currentAnimation].totalFrames;
+
+    // จบแอนิเมชันโจมตีเมื่อถึงเฟรมสุดท้าย
+    if (currentAnimation === "attack" && currentFrame === animations.attack.totalFrames - 1) {
+      isAttacking = false;
+      attackFinished = true;
+    }
   }
 
-  currentAnimation = (isRunningLeft || isRunningRight) ? "run" : "idle";
+  // กำหนดแอนิเมชันตามสถานะ
+  if (isJumping) {
+    currentAnimation = "jump";
+  } else if (isAttacking) {
+    currentAnimation = "attack";
+    runHoldTimer = 0;
+  } else if (isRunningLeft || isRunningRight) {
+    currentAnimation = "run";
+    runHoldTimer = 0;
+  } else if (runHoldTimer > 200) {
+    currentAnimation = "idle";
+  }
+
+  // รีเซ็ตเฟรมถ้าแอนิเมชันเปลี่ยน
+  if (currentAnimation !== lastAnimation) {
+    currentFrame = 0;
+    frameTimer = 0;
+    lastAnimation = currentAnimation;
+  }
 
   draw(deltaTime);
   requestAnimationFrame(gameLoop);
@@ -119,25 +178,62 @@ function gameLoop(timestamp) {
 let loaded = 0;
 function checkStart() {
   loaded++;
-  if (loaded === 3) gameLoop(0);
+  if (loaded === 5) gameLoop(0);
 }
 background.onload = checkStart;
 playerIdle.onload = checkStart;
 playerRun.onload = checkStart;
+playerAttack.onload = checkStart;
+playerJump.onload = checkStart;
 
+// ปุ่มควบคุมเดินขวา
 const runBtn = document.getElementById("runButton");
+runBtn.addEventListener("touchstart", () => { isRunningRight = true; });
+runBtn.addEventListener("touchend", () => { isRunningRight = false; });
+runBtn.addEventListener("touchcancel", () => { isRunningRight = false; });
+
+// ปุ่มควบคุมเดินซ้าย
 const leftBtn = document.getElementById("leftButton");
+leftBtn.addEventListener("touchstart", () => { isRunningLeft = true; });
+leftBtn.addEventListener("touchend", () => { isRunningLeft = false; });
+leftBtn.addEventListener("touchcancel", () => { isRunningLeft = false; });
 
-runBtn.addEventListener("touchstart", () => {
-  isRunningRight = true;
+// ปุ่มโจมตี
+const attackBtn = document.getElementById("attackButton");
+attackBtn.addEventListener("touchstart", () => {
+  if (!isAttacking) {
+    isAttacking = true;
+    attackFinished = false;
+  }
 });
-runBtn.addEventListener("touchend", () => {
-  isRunningRight = false;
+attackBtn.addEventListener("touchend", () => { });
+attackBtn.addEventListener("touchcancel", () => { });
+
+// ปุ่มกระโดด
+const jumpBtn = document.getElementById("jumpButton");
+jumpBtn.addEventListener("touchstart", () => {
+  if (!isJumping) {
+    isJumping = true;
+    jumpVelocity = -jumpStrength;
+  }
 });
 
-leftBtn.addEventListener("touchstart", () => {
-  isRunningLeft = true;
-});
-leftBtn.addEventListener("touchend", () => {
-  isRunningLeft = false;
-});
+// ปิด pinch zoom
+document.addEventListener("gesturestart", function (e) {
+  e.preventDefault();
+}, { passive: false });
+
+// ปิด double tap zoom
+let lastTouchEnd = 0;
+document.addEventListener("touchend", function (event) {
+  const now = new Date().getTime();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, { passive: false });
+
+// ปิด scroll ด้วยนิ้ว
+document.addEventListener("touchmove", function (e) {
+  e.preventDefault();
+}, { passive: false });
