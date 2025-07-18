@@ -1,21 +1,30 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8" />
-  <title>เกมนินจา</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- ลิงก์ไฟล์ CSS แยก -->
-  <link rel="stylesheet" href="css/style.css" />
-</head>
-<body>
-  <canvas id="gameCanvas"></canvas>
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: black;
+}
 
-  <!-- ปุ่มทัช "เดิน" -->
-  <div id="touchControls">
-    <button id="runButton">เดิน</button>
-  </div>
+canvas {
+  display: block;
+}
 
-  <!-- สคริปต์เกม -->
-  <script src="js/game.js"></script>
-</body>
-</html>
+/* ✅ ปุ่มควบคุม */
+#touchControls {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+#touchControls button {
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  border-radius: 30px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: black;
+}
