@@ -10,13 +10,13 @@ resizeCanvas();
 
 // โหลดภาพพื้นหลังและ sprite
 const background = new Image();
-background.src = "images/bg.png";
+background.src = "../images/bg.png";
 
 const playerIdle = new Image();
-playerIdle.src = "images/player_idle.png"; // 400×64 (4 เฟรม)
+playerIdle.src = "../images/player_idle.png"; // 400×64 (4 เฟรม)
 
 const playerRun = new Image();
-playerRun.src = "images/player_run.png";  // 700×64 (7 เฟรม)
+playerRun.src = "../images/player_run.png";  // 700×64 (7 เฟรม)
 
 let playerX = 100;
 let playerY = 0;
