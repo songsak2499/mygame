@@ -1,24 +1,44 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// ตั้งขนาด canvas ให้เท่ากับหน้าจอ
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
-// ✅ เปลี่ยน path ได้ตรงนี้
+// โหลดภาพพื้นหลัง
 const background = new Image();
-background.src = "../images/bg.png";
+background.src = "../images/bg.png"; // <-- แก้ path ให้ถูกตามโครงสร้างโฟลเดอร์
+
+let bgDrawParams = null;
 
 background.onload = () => {
-  const bgOriginalWidth = background.width;
-  const bgOriginalHeight = background.height;
-
-  // ให้พื้นหลังเต็มขอบซ้ายขวา แต่สูงต่ำลง
-  const scaleRatio = canvas.width / bgOriginalWidth;
+  // คำนวณขนาดและตำแหน่งที่ต้องใช้
+  const scaleRatio = canvas.width / background.width;
   const bgWidth = canvas.width;
-  const bgHeight = (bgOriginalHeight * scaleRatio) / 2;
+  const bgHeight = (background.height * scaleRatio) / 2;
+  const bgX = 0;
+  const bgY = (canvas.height - bgHeight) / 2;
 
-  const x = 0;
-  const y = (canvas.height - bgHeight) / 2;
-
-  ctx.drawImage(background, x, y, bgWidth, bgHeight);
+  bgDrawParams = { bgWidth, bgHeight, bgX, bgY };
+  requestAnimationFrame(gameLoop); // เริ่ม loop ตอนนี้
 };
+
+function drawBackground() {
+  if (bgDrawParams) {
+    const { bgWidth, bgHeight, bgX, bgY } = bgDrawParams;
+    ctx.drawImage(background, bgX, bgY, bgWidth, bgHeight);
+  }
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackground();
+
+  // ถ้าจะใส่ระบบเพิ่มเติม เช่นตัวละคร, UI, ให้เขียนตรงนี้
+
+  requestAnimationFrame(gameLoop);
+}
