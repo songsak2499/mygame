@@ -11,7 +11,7 @@ resizeCanvas();
 
 // โหลดภาพพื้นหลัง
 const background = new Image();
-background.src = "../images/bg.png"; // ย้อนออกจากโฟลเดอร์ js กลับไปที่ images
+background.src = "/mygame/images/bg.png"; // ย้อนออกจากโฟลเดอร์ js กลับไปที่ images
 
 background.onload = () => {
   draw();
