@@ -8,13 +8,17 @@ canvas {
   display: block;
 }
 
+/* รวมปุ่มควบคุมไว้ที่มุมล่างซ้าย */
 #touchControls {
   position: absolute;
   bottom: 20px;
   left: 20px;
   z-index: 10;
+  display: flex;
+  gap: 10px; /* เว้นระยะห่างระหว่างปุ่ม */
 }
 
+/* ปุ่มเดินขวา */
 #runButton {
   padding: 10px 20px;
   font-size: 18px;
@@ -25,4 +29,19 @@ canvas {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  cursor: pointer;
+}
+
+/* ปุ่มเดินซ้าย */
+#leftButton {
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 10px;
+  background-color: #444;
+  color: white;
+  border: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  cursor: pointer;
 }
