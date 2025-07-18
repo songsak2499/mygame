@@ -7,9 +7,9 @@ canvas.height = window.innerHeight;
 
 // โหลดภาพพื้นหลัง
 const background = new Image();
-background.src = "images/bg.png";  // ตรวจสอบให้แน่ใจว่า bg.png อยู่ในโฟลเดอร์ images
+background.src = "images/bg.png";  // ตำแหน่งภาพพื้นหลัง
 
 background.onload = () => {
-  // วาดภาพพื้นหลังให้เต็ม canvas
+  // วาดภาพพื้นหลังขยายเต็ม canvas
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 };
