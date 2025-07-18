@@ -8,7 +8,6 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// โหลดภาพพื้นหลังและ sprite
 const background = new Image();
 background.src = "images/bg.png";
 
@@ -27,24 +26,21 @@ let currentFrame = 0;
 let frameTimer = 0;
 const frameInterval = 150;
 
-// animation control
 let currentAnimation = "idle";
 const animations = {
   idle: { image: playerIdle, totalFrames: 4 },
   run: { image: playerRun, totalFrames: 7 }
 };
 
-// ✅ ควบคุมทิศทาง
 let isRunningLeft = false;
 let isRunningRight = false;
 let moveSpeed = 2;
-let facingLeft = false; // พลิกภาพถ้าหันซ้าย
+let facingLeft = false;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-// วาดฉากและตัวละคร
 function draw(deltaTime) {
   const bgOriginalWidth = background.width;
   const bgOriginalHeight = background.height;
@@ -67,10 +63,6 @@ function draw(deltaTime) {
 
   playerY = groundY - drawPlayerHeight;
 
-  const anim = animations[currentAnimation];
-  const sx = currentFrame * frameWidth;
-
-  // อัปเดตตำแหน่ง
   if (isRunningRight) {
     playerX += moveSpeed;
     facingLeft = false;
@@ -80,10 +72,11 @@ function draw(deltaTime) {
     facingLeft = true;
   }
 
-  // ป้องกันไม่ให้ออกจากขอบจอ
   playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
 
-  // วาดตัวละคร (พลิกภาพหากหันซ้าย)
+  const anim = animations[currentAnimation];
+  const sx = currentFrame * frameWidth;
+
   ctx.save();
   if (facingLeft) {
     ctx.scale(-1, 1);
@@ -104,7 +97,6 @@ function draw(deltaTime) {
   ctx.restore();
 }
 
-// ลูปเกม
 let lastTime = 0;
 function gameLoop(timestamp) {
   const deltaTime = timestamp - lastTime;
@@ -114,22 +106,16 @@ function gameLoop(timestamp) {
   const totalFrames = animations[currentAnimation].totalFrames;
 
   if (frameTimer >= frameInterval) {
-    frameTimer -= frameInterval; // ลดทีละ interval เพื่อ smooth กว่า
+    frameTimer -= frameInterval; // ลดเวลาให้ลื่นกว่าเดิม
     currentFrame = (currentFrame + 1) % totalFrames;
   }
 
-  // ตั้งแอนิเมชันตามสถานะเดินหรือหยุด
-  if (isRunningLeft || isRunningRight) {
-    currentAnimation = "run";
-  } else {
-    currentAnimation = "idle";
-  }
+  currentAnimation = (isRunningLeft || isRunningRight) ? "run" : "idle";
 
   draw(deltaTime);
   requestAnimationFrame(gameLoop);
 }
 
-// โหลดครบ 3 รูปแล้วเริ่ม
 let loaded = 0;
 function checkStart() {
   loaded++;
@@ -139,8 +125,9 @@ background.onload = checkStart;
 playerIdle.onload = checkStart;
 playerRun.onload = checkStart;
 
-// ปุ่มขวา
 const runBtn = document.getElementById("runButton");
+const leftBtn = document.getElementById("leftButton");
+
 runBtn.addEventListener("touchstart", () => {
   isRunningRight = true;
 });
@@ -148,8 +135,6 @@ runBtn.addEventListener("touchend", () => {
   isRunningRight = false;
 });
 
-// ปุ่มซ้าย
-const leftBtn = document.getElementById("leftButton");
 leftBtn.addEventListener("touchstart", () => {
   isRunningLeft = true;
 });
