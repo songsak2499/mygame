@@ -9,23 +9,21 @@ window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 const background = new Image();
-background.src = "../images/bg.png"; // เพราะ game.js อยู่ใน js/ โฟลเดอร์ต้องย้อนกลับ 1 ชั้น
+background.src = "../images/bg.png"; // ตรวจสอบว่าที่อยู่ถูกต้อง
 
 background.onload = () => {
   draw();
 };
 
 function draw() {
-  const bgOriginalWidth = background.width;
-  const bgOriginalHeight = background.height;
-
-  const drawWidth = canvas.width;
-  const scale = drawWidth / bgOriginalWidth;
-  const drawHeight = (bgOriginalHeight * scale) / 2; // ลดสูงลงครึ่งหนึ่ง
-
-  const bgX = 0;
-  const bgY = (canvas.height - drawHeight) / 2;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(background, bgX, bgY, drawWidth, drawHeight);
+
+  const imgRatio = background.width / background.height;
+  const targetWidth = canvas.width;
+  const targetHeight = canvas.width / imgRatio;
+
+  const drawHeight = targetHeight * 0.5; // ปรับแค่ส่วนนี้เพื่อเพิ่ม/ลดความสูงของภาพ
+  const y = (canvas.height - drawHeight) / 2;
+
+  ctx.drawImage(background, 0, y, canvas.width, drawHeight);
 }
