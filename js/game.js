@@ -18,7 +18,7 @@ const playerIdle = new Image();
 playerIdle.src = "/mygame/images/player_idle.png"; // ตัวละครนิ่ง
 
 const playerRun = new Image();
-playerRun.src = "/mygame/images/player_run.png"; // ตัวละครเดิน (ใช้ idle ชั่วคราวถ้าไม่มี)
+playerRun.src = "/mygame/images/player_idle.png"; // ตัวละครเดิน (ใช้ idle ชั่วคราวถ้าไม่มี)
 
 let currentPlayerImage = playerIdle;
 
