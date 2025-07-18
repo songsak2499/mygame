@@ -38,7 +38,11 @@ const animations = {
 let isRunningLeft = false;
 let isRunningRight = false;
 let moveSpeed = 2;
-let facingLeft = false; // ไว้สำหรับพลิกภาพถ้าจะใช้ภายหลัง
+let facingLeft = false; // พลิกภาพถ้าหันซ้าย
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
 // วาดฉากและตัวละคร
 function draw(deltaTime) {
@@ -66,7 +70,7 @@ function draw(deltaTime) {
   const anim = animations[currentAnimation];
   const sx = currentFrame * frameWidth;
 
-  // ✅ อัปเดตตำแหน่ง
+  // อัปเดตตำแหน่ง
   if (isRunningRight) {
     playerX += moveSpeed;
     facingLeft = false;
@@ -76,7 +80,10 @@ function draw(deltaTime) {
     facingLeft = true;
   }
 
-  // ✅ วาดตัวละคร (พลิกภาพหากหันซ้าย)
+  // ป้องกันไม่ให้ออกจากขอบจอ
+  playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
+
+  // วาดตัวละคร (พลิกภาพหากหันซ้าย)
   ctx.save();
   if (facingLeft) {
     ctx.scale(-1, 1);
@@ -107,11 +114,11 @@ function gameLoop(timestamp) {
   const totalFrames = animations[currentAnimation].totalFrames;
 
   if (frameTimer >= frameInterval) {
-    frameTimer = 0;
+    frameTimer -= frameInterval; // ลดทีละ interval เพื่อ smooth กว่า
     currentFrame = (currentFrame + 1) % totalFrames;
   }
 
-  // ตั้งแอนิเมชันตามสถานะ
+  // ตั้งแอนิเมชันตามสถานะเดินหรือหยุด
   if (isRunningLeft || isRunningRight) {
     currentAnimation = "run";
   } else {
@@ -132,7 +139,7 @@ background.onload = checkStart;
 playerIdle.onload = checkStart;
 playerRun.onload = checkStart;
 
-// ✅ ปุ่มขวา
+// ปุ่มขวา
 const runBtn = document.getElementById("runButton");
 runBtn.addEventListener("touchstart", () => {
   isRunningRight = true;
@@ -141,7 +148,7 @@ runBtn.addEventListener("touchend", () => {
   isRunningRight = false;
 });
 
-// ✅ ปุ่มซ้าย
+// ปุ่มซ้าย
 const leftBtn = document.getElementById("leftButton");
 leftBtn.addEventListener("touchstart", () => {
   isRunningLeft = true;
