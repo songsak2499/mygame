@@ -34,6 +34,9 @@ const animations = {
   run: { image: playerRun, totalFrames: 7 }
 };
 
+// ✅ ตัวแปรควบคุมการเดิน
+let isRunning = false;
+
 // วาดฉากและตัวละคร
 function draw(deltaTime) {
   const bgOriginalWidth = background.width;
@@ -59,6 +62,11 @@ function draw(deltaTime) {
 
   const anim = animations[currentAnimation];
   const sx = currentFrame * frameWidth;
+
+  // ✅ เดินไปทางขวาถ้ายังแตะปุ่มอยู่
+  if (isRunning) {
+    playerX += 2; // ปรับเลขนี้เพื่อเพิ่ม/ลดความเร็ว
+  }
 
   ctx.drawImage(
     anim.image,
@@ -101,9 +109,11 @@ runBtn.addEventListener("touchstart", () => {
   currentAnimation = "run";
   currentFrame = 0;
   frameTimer = 0;
+  isRunning = true; // ✅ เริ่มเดิน
 });
 runBtn.addEventListener("touchend", () => {
   currentAnimation = "idle";
   currentFrame = 0;
   frameTimer = 0;
+  isRunning = false; // ✅ หยุดเดิน
 });
