@@ -44,7 +44,7 @@ function draw(deltaTime) {
   const groundY = bgY + drawHeight;
 
   // ✅ ขยายตัวละคร 3 เท่า
-  const scaleFactor = 3;
+  const scaleFactor = 2;
   const drawPlayerWidth = frameWidth * scaleFactor;
   const drawPlayerHeight = frameHeight * scaleFactor;
 
