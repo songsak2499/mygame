@@ -3,7 +3,7 @@ const ctx = canvas.getContext("2d");
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight * 0.5;  // เพิ่มความสูง canvas เป็น 120% ของหน้าจอ
+  canvas.height = window.innerHeight;  // เพิ่มความสูง canvas เป็น 120% ของหน้าจอ
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
