@@ -4,20 +4,18 @@
   <meta charset="UTF-8" />
   <title>เกมนินจา</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background-color: black;
-    }
-    canvas {
-      display: block;
-    }
-  </style>
+  <!-- ลิงก์ไฟล์ CSS แยก -->
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <!-- เอา type="module" ออก -->
+
+  <!-- ปุ่มทัช "เดิน" -->
+  <div id="touchControls">
+    <button id="runButton">เดิน</button>
+  </div>
+
+  <!-- สคริปต์เกม -->
   <script src="js/game.js"></script>
 </body>
 </html>
