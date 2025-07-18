@@ -1,62 +1,33 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// ปรับขนาด canvas ให้เต็มหน้าจอ
+// ปรับขนาด canvas
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// โหลดภาพพื้นหลัง
+// โหลดพื้นหลัง
 const background = new Image();
-background.src = "/mygame/images/bg.png";
+background.src = "images/bg.png";
 
-// โหลด sprite ตัวละคร
+// โหลด sprite sheet ตัวละคร (idle 4 เฟรม)
 const playerIdle = new Image();
-playerIdle.src = "/mygame/images/player_idle.png"; // ตัวละครนิ่ง
-
-const playerRun = new Image();
-playerRun.src = "/mygame/images/player_idle.png"; // ตัวละครเดิน (ใช้ idle ชั่วคราวถ้าไม่มี)
-
-let currentPlayerImage = playerIdle;
+playerIdle.src = "images/player_idle.png"; // ขนาด 400×64 (4 เฟรม)
 
 let playerX = 100;
 let playerY = 0;
-const playerWidth = 64;
-const playerHeight = 64;
-let playerSpeed = 4;
+const frameWidth = 100;
+const frameHeight = 64;
+let currentFrame = 0;
+const totalFrames = 4;
+let frameTimer = 0;
+const frameInterval = 150; // เปลี่ยนเฟรมทุก 150ms
 
-let movingLeft = false;
-let movingRight = false;
-
-// ฟังค์ชันควบคุมปุ่ม
-window.addEventListener("keydown", (e) => {
-  if (e.key === "ArrowRight") {
-    movingRight = true;
-    currentPlayerImage = playerRun;
-  } else if (e.key === "ArrowLeft") {
-    movingLeft = true;
-    currentPlayerImage = playerRun;
-  }
-});
-
-window.addEventListener("keyup", (e) => {
-  if (e.key === "ArrowRight") {
-    movingRight = false;
-  } else if (e.key === "ArrowLeft") {
-    movingLeft = false;
-  }
-
-  // หยุดวิ่งเมื่อปล่อยทุกปุ่ม
-  if (!movingLeft && !movingRight) {
-    currentPlayerImage = playerIdle;
-  }
-});
-
-// วาดพื้นหลัง + ตัวละคร
-function draw() {
+// วาด
+function draw(deltaTime) {
   const bgOriginalWidth = background.width;
   const bgOriginalHeight = background.height;
 
@@ -70,39 +41,39 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(background, bgX, bgY, drawWidth, drawHeight);
 
-  // วางตัวละครให้ยืนบนพื้น
   const groundY = bgY + drawHeight;
-  playerY = groundY - playerHeight;
+  playerY = groundY - frameHeight;
 
-  // ขยับตัวละคร
-  if (movingLeft) {
-    playerX -= playerSpeed;
-  }
-  if (movingRight) {
-    playerX += playerSpeed;
-  }
-
-  // วาดตัวละคร
-  ctx.drawImage(currentPlayerImage, playerX, playerY, playerWidth, playerHeight);
+  // วาดเฟรมจาก sprite sheet
+  const sx = currentFrame * frameWidth;
+  ctx.drawImage(
+    playerIdle,
+    sx, 0, frameWidth, frameHeight, // ต้นทางใน sprite sheet
+    playerX, playerY, frameWidth, frameHeight // ปลายทางบนจอ
+  );
 }
 
 // ลูปเกม
-function gameLoop() {
-  draw();
+let lastTime = 0;
+function gameLoop(timestamp) {
+  const deltaTime = timestamp - lastTime;
+  lastTime = timestamp;
+
+  frameTimer += deltaTime;
+  if (frameTimer >= frameInterval) {
+    frameTimer = 0;
+    currentFrame = (currentFrame + 1) % totalFrames;
+  }
+
+  draw(deltaTime);
   requestAnimationFrame(gameLoop);
 }
 
-// รอโหลดทุกภาพก่อนเริ่มเกม
-let assetsLoaded = 0;
-const totalAssets = 3;
+// รอโหลดก่อนเริ่ม
+let loaded = 0;
+background.onload = () => { loaded++; checkStart(); };
+playerIdle.onload = () => { loaded++; checkStart(); };
 
 function checkStart() {
-  assetsLoaded++;
-  if (assetsLoaded === totalAssets) {
-    gameLoop();
-  }
+  if (loaded === 2) gameLoop(0);
 }
-
-background.onload = checkStart;
-playerIdle.onload = checkStart;
-playerRun.onload = checkStart;
