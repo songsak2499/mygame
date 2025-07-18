@@ -42,14 +42,20 @@ function draw(deltaTime) {
   ctx.drawImage(background, bgX, bgY, drawWidth, drawHeight);
 
   const groundY = bgY + drawHeight;
-  playerY = groundY - frameHeight;
 
-  // วาดเฟรมจาก sprite sheet
+  // ✅ ขยายตัวละคร 3 เท่า
+  const scaleFactor = 3;
+  const drawPlayerWidth = frameWidth * scaleFactor;
+  const drawPlayerHeight = frameHeight * scaleFactor;
+
+  playerY = groundY - drawPlayerHeight;
+
   const sx = currentFrame * frameWidth;
+
   ctx.drawImage(
     playerIdle,
-    sx, 0, frameWidth, frameHeight, // ต้นทางใน sprite sheet
-    playerX, playerY, frameWidth, frameHeight // ปลายทางบนจอ
+    sx, 0, frameWidth, frameHeight,         // ต้นทางใน sprite sheet
+    playerX, playerY, drawPlayerWidth, drawPlayerHeight  // ขนาดที่วาดบนจอ (3 เท่า)
   );
 }
 
