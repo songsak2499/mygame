@@ -1,27 +1,29 @@
 body {
   margin: 0;
-  overflow: hidden;         /* ป้องกันการเลื่อน */
-  touch-action: none;       /* ปิด gesture เช่น pinch zoom */
-  -ms-touch-action: none;   /* สำหรับบางเบราว์เซอร์เก่า */
-  user-select: none;        /* ห้ามลาก/เลือกข้อความ */
+  overflow: hidden;
+  touch-action: none;
+  -ms-touch-action: none;
+  user-select: none;
   -webkit-user-select: none;
-  overscroll-behavior: none; /* หยุด scroll bounce */
+  overscroll-behavior: none;
   background-color: black;
   position: relative;
 }
 
 canvas {
   display: block;
+  width: 100vw;
+  height: 100vh;
 }
 
-/* รวมปุ่มควบคุมไว้ที่มุมล่างซ้าย */
+/* ✅ ปรับปุ่มให้อยู่ล่างซ้ายของหน้าจอเสมอ */
 #touchControls {
   position: absolute;
-  top: 1050px;
+  bottom: 30px;
   left: 20px;
   z-index: 10;
   display: flex;
-  gap: 30px; /* เว้นระยะห่างระหว่างปุ่ม */
+  gap: 30px;
 }
 
 /* ปุ่มเดินขวา */
@@ -52,10 +54,11 @@ canvas {
   cursor: pointer;
 }
 
+/* ✅ ปรับปุ่มให้อยู่ขวาล่าง ไม่หลุดหน้าจอ */
 #attackButton {
   position: absolute;
   right: 100px;
-  bottom: 350px;
+  bottom: 150px;
   padding: 25px 35px;
   font-size: 18px;
   border-radius: 10px;
@@ -66,12 +69,12 @@ canvas {
   -webkit-user-select: none;
   touch-action: manipulation;
   cursor: pointer;
-  z-index: 99; /* สำคัญมาก เพื่อให้อยู่บน canvas */
+  z-index: 99;
 }
 
 #jumpButton {
   position: absolute;
-  bottom: 250px;
+  bottom: 50px;
   right: 100px;
   padding: 25px 35px;
   font-size: 18px;
