@@ -69,7 +69,7 @@ let enemy = {
   frameInterval: 200,
   width: 100,
   height: 64,
-  scale: 1.4,
+  scale: 2.2,
   totalFrames: 6
 };
 
