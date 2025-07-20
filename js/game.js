@@ -12,7 +12,7 @@ const background = new Image();
 background.src = "images/bg.png";
 
 const playerIdle = new Image();
-playerIdle.src = "images/player_idle.png"; // 4 เฟรม
+playerIdle.src = "images/player_idle.png"; // 4 เฟรม, 100px/เฟรม
 
 const playerRun = new Image();
 playerRun.src = "images/player_run.png"; // 7 เฟรม
@@ -21,46 +21,42 @@ const playerAttack = new Image();
 playerAttack.src = "images/player_attack.png"; // 6 เฟรม
 
 const playerJump = new Image();
-playerJump.src = "images/player_jump.png"; // สมมุติ 6 เฟรม
+playerJump.src = "images/player_jump.png"; // 6 เฟรม
 
-// === ผู้เล่นหลัก ===
+// ศัตรู (ผู้เล่นอีกตัว) sprite
+const enemyIdle = new Image();
+enemyIdle.src = "images/enemy_idle.png"; // 6 เฟรม, 96px/เฟรม
+
+const enemyAttack = new Image();
+enemyAttack.src = "images/enemy_attack.png"; // 4 เฟรม, 144px/เฟรม
+
+// === Main player ===
 let playerX = 100;
 let playerY = 0;
-let currentFrame = 0;
-let frameTimer = 0;
-const frameInterval = 150;
-let currentAnimation = "idle";
-let isRunningLeft = false;
-let isRunningRight = false;
-let isAttacking = false;
-let isJumping = false;
-let facingLeft = false;
-let jumpVelocity = 0;
-let lastAnimation = "idle";
-let attackFinished = true;
-let runHoldTimer = 0;
-
+let playerFrame = 0;
+let playerFrameTimer = 0;
+const playerFrameInterval = 150;
+let playerAnimation = "idle";
+let playerFacingLeft = false;
+let isPlayerRunningLeft = false;
+let isPlayerRunningRight = false;
+let isPlayerJumping = false;
+let isPlayerAttacking = false;
+let playerJumpVelocity = 0;
 const gravity = 0.5;
 const jumpStrength = 10;
-const moveSpeed = 2;
+const playerMoveSpeed = 2;
 
-const animations = {
-  idle: { image: playerIdle, totalFrames: 4 },
-  run: { image: playerRun, totalFrames: 7 },
-  attack: { image: playerAttack, totalFrames: 6 },
-  jump: { image: playerJump, totalFrames: 6 }
-};
-
-// === AI ศัตรู: ใช้ชุดเดียวกับผู้เล่น ===
-const enemy = {
+// === Enemy player (ศัตรู) ===
+let enemy = {
   x: 600,
   y: 0,
-  facingLeft: true,
-  state: "idle",
   frame: 0,
   frameTimer: 0,
-  frameInterval: 180,
-  scale: 1.4
+  frameInterval: 200,
+  state: "idle", // idle หรือ attack
+  facingLeft: true,
+  scale: 1.4,
 };
 
 function clamp(value, min, max) {
@@ -75,163 +71,203 @@ function draw(deltaTime) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(background, 0, (canvas.height - drawHeight) / 2, canvas.width, drawHeight);
 
-  // === AI Enemy ===
-  const eAnim = animations[enemy.state];
-  const eFrameW = 100;
-  const eFrameH = 64;
-  const eDrawW = eFrameW * enemy.scale;
-  const eDrawH = eFrameH * enemy.scale;
-  enemy.y = groundY - eDrawH;
-  const esx = enemy.frame * eFrameW;
+  // --- วาด enemy (ผู้เล่นอีกตัว) ---
+  let enemyImage = enemyIdle;
+  let frameCount = 6;
+  let frameW = 96;
+  let frameH = 96;
+  let offsetX = 0;
+
+  if (enemy.state === "attack") {
+    enemyImage = enemyAttack;
+    frameCount = 4;
+    frameW = 144;
+    offsetX = (frameW - 96) * enemy.scale; // ชดเชยตำแหน่งตอนฟลิปภาพ
+  }
+
+  const drawEnemyW = frameW * enemy.scale;
+  const drawEnemyH = frameH * enemy.scale;
+  enemy.y = groundY - drawEnemyH;
+  const sxEnemy = enemy.frame * frameW;
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   if (enemy.facingLeft) {
     ctx.scale(-1, 1);
-    ctx.drawImage(eAnim.image, esx, 0, eFrameW, eFrameH,
-      -(enemy.x + eDrawW), enemy.y,
-      eDrawW, eDrawH);
+    ctx.drawImage(
+      enemyImage,
+      sxEnemy, 0, frameW, frameH,
+      -(enemy.x + drawEnemyW) - offsetX, enemy.y,
+      drawEnemyW, drawEnemyH
+    );
   } else {
-    ctx.drawImage(eAnim.image, esx, 0, eFrameW, eFrameH,
+    ctx.drawImage(
+      enemyImage,
+      sxEnemy, 0, frameW, frameH,
       enemy.x, enemy.y,
-      eDrawW, eDrawH);
+      drawEnemyW, drawEnemyH
+    );
   }
   ctx.restore();
 
-  // === ผู้เล่น ===
+  // --- วาด player ---
   const playerScale = 1.4;
-  const drawPlayerWidth = 100 * playerScale;
-  const drawPlayerHeight = 64 * playerScale;
+  const drawPlayerW = 100 * playerScale;
+  const drawPlayerH = 64 * playerScale;
 
-  if (isJumping) {
-    jumpVelocity += gravity;
-    playerY += jumpVelocity;
-    if (playerY >= groundY - drawPlayerHeight) {
-      playerY = groundY - drawPlayerHeight;
-      isJumping = false;
-      jumpVelocity = 0;
+  if (isPlayerJumping) {
+    playerJumpVelocity += gravity;
+    playerY += playerJumpVelocity;
+    if (playerY >= groundY - drawPlayerH) {
+      playerY = groundY - drawPlayerH;
+      isPlayerJumping = false;
+      playerJumpVelocity = 0;
     }
   } else {
-    playerY = groundY - drawPlayerHeight;
+    playerY = groundY - drawPlayerH;
   }
 
-  if (!isAttacking) {
-    if (isRunningRight) {
-      playerX += moveSpeed;
-      facingLeft = false;
+  if (!isPlayerAttacking) {
+    if (isPlayerRunningRight) {
+      playerX += playerMoveSpeed;
+      playerFacingLeft = false;
     }
-    if (isRunningLeft) {
-      playerX -= moveSpeed;
-      facingLeft = true;
+    if (isPlayerRunningLeft) {
+      playerX -= playerMoveSpeed;
+      playerFacingLeft = true;
     }
-    playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
+    playerX = clamp(playerX, 0, canvas.width - drawPlayerW);
   }
 
-  // === AI enemy logic ===
-  const dist = enemy.x - playerX;
-  if (Math.abs(dist) > 5) {
-    if (Math.abs(dist) < 150) {
-      enemy.state = "attack";
-    } else {
-      enemy.state = "run";
-      enemy.x += dist > 0 ? -1.2 : 1.2;
-    }
-    enemy.facingLeft = dist > 0;
-  } else {
-    enemy.state = "idle";
-  }
+  // enemy หันหน้าเข้าหาผู้เล่น
+  enemy.facingLeft = enemy.x > playerX;
 
-  // === Player ===
-  const anim = animations[currentAnimation];
-  const px = currentFrame * 100;
+  // player animation frame
+  const playerAnimData = {
+    idle: { image: playerIdle, totalFrames: 4 },
+    run: { image: playerRun, totalFrames: 7 },
+    attack: { image: playerAttack, totalFrames: 6 },
+    jump: { image: playerJump, totalFrames: 6 },
+  };
+
+  const playerAnim = playerAnimData[playerAnimation];
+  const pxPlayer = Math.min(playerFrame * 100, playerAnim.image.width - 100);
 
   ctx.save();
-  if (facingLeft) {
+  if (playerFacingLeft) {
     ctx.scale(-1, 1);
-    ctx.drawImage(anim.image, px, 0, 100, 64,
-      -(playerX + drawPlayerWidth), playerY,
-      drawPlayerWidth, drawPlayerHeight);
+    ctx.drawImage(
+      playerAnim.image,
+      pxPlayer, 0, 100, 64,
+      -(playerX + drawPlayerW), playerY,
+      drawPlayerW, drawPlayerH
+    );
   } else {
-    ctx.drawImage(anim.image, px, 0, 100, 64,
+    ctx.drawImage(
+      playerAnim.image,
+      pxPlayer, 0, 100, 64,
       playerX, playerY,
-      drawPlayerWidth, drawPlayerHeight);
+      drawPlayerW, drawPlayerH
+    );
   }
   ctx.restore();
 }
 
-// === Game Loop ===
 let lastTime = 0;
+let runHoldTimer = 0;
 function gameLoop(timestamp) {
   const deltaTime = timestamp - lastTime;
   lastTime = timestamp;
 
-  frameTimer += deltaTime;
+  // player frame update
+  playerFrameTimer += deltaTime;
   runHoldTimer += deltaTime;
-
-  if (frameTimer >= frameInterval) {
-    frameTimer = 0;
-    currentFrame = (currentFrame + 1) % animations[currentAnimation].totalFrames;
-    if (currentAnimation === "attack" && currentFrame === animations.attack.totalFrames - 1) {
-      isAttacking = false;
-      attackFinished = true;
+  if (playerFrameTimer >= playerFrameInterval) {
+    playerFrameTimer = 0;
+    playerFrame = (playerFrame + 1) % (playerAnimation === "attack" ? 6 : playerAnimData[playerAnimation].totalFrames);
+    if (playerAnimation === "attack" && playerFrame === 5) {
+      isPlayerAttacking = false;
     }
   }
 
-  // === AI enemy frame ===
+  // enemy AI logic: โจมตีเมื่อเข้าใกล้ player
+  const dist = Math.abs(enemy.x - playerX);
+  if (dist < 150) {
+    if (enemy.state !== "attack") {
+      enemy.state = "attack";
+      enemy.frame = 0;
+    }
+  } else {
+    enemy.state = "idle";
+  }
+
+  // enemy frame update
   enemy.frameTimer += deltaTime;
   if (enemy.frameTimer >= enemy.frameInterval) {
     enemy.frameTimer = 0;
-    enemy.frame = (enemy.frame + 1) % animations[enemy.state].totalFrames;
+    if (enemy.state === "attack") {
+      enemy.frame++;
+      if (enemy.frame >= 4) {
+        enemy.frame = 0;
+        enemy.state = "idle";
+      }
+    } else {
+      enemy.frame = (enemy.frame + 1) % 6;
+    }
   }
 
-  // === Player animation state ===
-  if (isJumping) {
-    currentAnimation = "jump";
-  } else if (isAttacking) {
-    currentAnimation = "attack";
+  // player animation state update
+  if (isPlayerJumping) {
+    playerAnimation = "jump";
+  } else if (isPlayerAttacking) {
+    playerAnimation = "attack";
     runHoldTimer = 0;
-  } else if (isRunningLeft || isRunningRight) {
-    currentAnimation = "run";
+  } else if (isPlayerRunningLeft || isPlayerRunningRight) {
+    playerAnimation = "run";
     runHoldTimer = 0;
   } else if (runHoldTimer > 200) {
-    currentAnimation = "idle";
+    playerAnimation = "idle";
   }
 
-  if (currentAnimation !== lastAnimation) {
-    currentFrame = 0;
-    frameTimer = 0;
-    lastAnimation = currentAnimation;
+  // reset frame on animation change
+  if (playerAnimation !== lastAnimation) {
+    playerFrame = 0;
+    playerFrameTimer = 0;
+    lastAnimation = playerAnimation;
   }
 
   draw(deltaTime);
   requestAnimationFrame(gameLoop);
 }
 
-// === โหลดครบ ===
+// โหลดภาพครบเริ่มเกม
 let loaded = 0;
 function checkStart() {
   loaded++;
-  if (loaded >= 5) gameLoop(0);
+  if (loaded >= 8) gameLoop(0);
 }
 [
-  background, playerIdle, playerRun, playerAttack, playerJump
+  background, playerIdle, playerRun, playerAttack, playerJump,
+  enemyIdle, enemyAttack
 ].forEach(img => img.onload = checkStart);
 
-// === Touch controls ===
-document.getElementById("runButton").addEventListener("touchstart", () => isRunningRight = true);
-document.getElementById("runButton").addEventListener("touchend", () => isRunningRight = false);
-document.getElementById("leftButton").addEventListener("touchstart", () => isRunningLeft = true);
-document.getElementById("leftButton").addEventListener("touchend", () => isRunningLeft = false);
+// Controls
+document.getElementById("runButton").addEventListener("touchstart", () => isPlayerRunningRight = true);
+document.getElementById("runButton").addEventListener("touchend", () => isPlayerRunningRight = false);
+
+document.getElementById("leftButton").addEventListener("touchstart", () => isPlayerRunningLeft = true);
+document.getElementById("leftButton").addEventListener("touchend", () => isPlayerRunningLeft = false);
+
 document.getElementById("attackButton").addEventListener("touchstart", () => {
-  if (!isAttacking) {
-    isAttacking = true;
-    attackFinished = false;
+  if (!isPlayerAttacking) {
+    isPlayerAttacking = true;
   }
 });
+
 document.getElementById("jumpButton").addEventListener("touchstart", () => {
-  if (!isJumping) {
-    isJumping = true;
-    jumpVelocity = -jumpStrength;
+  if (!isPlayerJumping) {
+    isPlayerJumping = true;
+    playerJumpVelocity = -jumpStrength;
   }
 });
 
