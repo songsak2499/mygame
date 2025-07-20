@@ -114,17 +114,18 @@ function draw(deltaTime) {
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
+
   if (enemy.facingLeft) {
     ctx.scale(-1, 1);
 
-    // ปรับ offset X สำหรับภาพโจมตี (กว้างกว่า idle)
+    // แก้ไข offsetX ให้ชดเชยตำแหน่งเวลาฟลิปเพื่อไม่ให้ภาพซ้ำซ้อน
+    // คำนวณความต่างของความกว้างเฟรมระหว่าง attack กับ idle แล้วคูณด้วย scale
     let offsetX = 0;
     if (enemy.state === "attack") {
-      // ความต่างความกว้าง = 144 - 96 = 48 px
-      // คูณด้วยสเกล เพื่อปรับตำแหน่งภาพ
-      offsetX = 48 * enemy.scale;
+      offsetX = (frameWidth - 96) * enemy.scale; // (144 - 96) * scale
     }
 
+    // วาดภาพ โดยลบ offsetX เพื่อปรับตำแหน่งให้ถูกต้อง
     ctx.drawImage(
       enemyImage,
       sx, 0, frameWidth, frameHeight,
@@ -132,6 +133,7 @@ function draw(deltaTime) {
       drawEnemyWidth, drawEnemyHeight
     );
   } else {
+    // ตอนหันขวา วาดภาพปกติไม่ต้องชดเชย offsetX
     ctx.drawImage(
       enemyImage,
       sx, 0, frameWidth, frameHeight,
