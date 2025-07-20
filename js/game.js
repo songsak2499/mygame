@@ -116,10 +116,19 @@ function draw(deltaTime) {
   ctx.imageSmoothingEnabled = false;
   if (enemy.facingLeft) {
     ctx.scale(-1, 1);
+
+    // ปรับ offset X สำหรับภาพโจมตี (กว้างกว่า idle)
+    let offsetX = 0;
+    if (enemy.state === "attack") {
+      // ความต่างความกว้าง = 144 - 96 = 48 px
+      // คูณด้วยสเกล เพื่อปรับตำแหน่งภาพ
+      offsetX = 48 * enemy.scale;
+    }
+
     ctx.drawImage(
       enemyImage,
       sx, 0, frameWidth, frameHeight,
-      -(enemy.x + drawEnemyWidth), enemy.y,
+      -(enemy.x + drawEnemyWidth) - offsetX, enemy.y,
       drawEnemyWidth, drawEnemyHeight
     );
   } else {
@@ -252,7 +261,7 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
-// โหลดครบแล้วค่อยเริ่มเกม
+// โหลดครบแล้วเริ่มเกม
 let loaded = 0;
 function checkStart() {
   loaded++;
