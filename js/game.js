@@ -29,7 +29,7 @@ enemyIdle.src = "images/enemy_idle.png"; // 576x96 (6 เฟรม)
 
 // ศัตรู attack sprite (6 เฟรม)
 const enemyAttack = new Image();
-enemyAttack.src = "images/enemy_attack.png"; // 576x96 (6 เฟรม)
+enemyAttack.src = "images/attack.png"; // 576x96 (6 เฟรม)
 
 let playerX = 100;
 let playerY = 0;
