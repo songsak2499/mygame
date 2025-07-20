@@ -1,4 +1,3 @@
-// === game.js เวอร์ชันเต็ม ===
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -24,12 +23,7 @@ playerAttack.src = "images/player_attack.png"; // 6 เฟรม
 const playerJump = new Image();
 playerJump.src = "images/player_jump.png"; // สมมุติ 6 เฟรม
 
-const enemyIdle = new Image();
-enemyIdle.src = "images/enemy_idle.png"; // 6 เฟรม, 96px
-const enemyAttack = new Image();
-enemyAttack.src = "images/attack.png"; // 4 เฟรม, 144px
-
-// === ผู้เล่น ===
+// === ผู้เล่นหลัก ===
 let playerX = 100;
 let playerY = 0;
 let currentFrame = 0;
@@ -57,15 +51,15 @@ const animations = {
   jump: { image: playerJump, totalFrames: 6 }
 };
 
-// === ศัตรู ===
-let enemy = {
+// === AI ศัตรู: ใช้ชุดเดียวกับผู้เล่น ===
+const enemy = {
   x: 600,
   y: 0,
+  facingLeft: true,
+  state: "idle",
   frame: 0,
   frameTimer: 0,
-  frameInterval: 200,
-  state: "idle",
-  facingLeft: true,
+  frameInterval: 180,
   scale: 1.4
 };
 
@@ -81,41 +75,30 @@ function draw(deltaTime) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(background, 0, (canvas.height - drawHeight) / 2, canvas.width, drawHeight);
 
-  // === Enemy ===
-  let enemyImage = enemyIdle;
-  let frameCount = 6;
-  let frameW = 96;
-  let frameH = 96;
-  let offsetX = 0;
-
-  if (enemy.state === "attack") {
-    enemyImage = enemyAttack;
-    frameCount = 4;
-    frameW = 144;
-    offsetX = (144 - 96) * enemy.scale;
-  }
-
-  const drawW = frameW * enemy.scale;
-  const drawH = frameH * enemy.scale;
-  const sx = enemy.frame * frameW;
-  enemy.y = groundY - drawH;
+  // === AI Enemy ===
+  const eAnim = animations[enemy.state];
+  const eFrameW = 100;
+  const eFrameH = 64;
+  const eDrawW = eFrameW * enemy.scale;
+  const eDrawH = eFrameH * enemy.scale;
+  enemy.y = groundY - eDrawH;
+  const esx = enemy.frame * eFrameW;
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
-
   if (enemy.facingLeft) {
     ctx.scale(-1, 1);
-    ctx.drawImage(enemyImage, sx, 0, frameW, frameH,
-      -(enemy.x + drawW) - offsetX, enemy.y,
-      drawW, drawH);
+    ctx.drawImage(eAnim.image, esx, 0, eFrameW, eFrameH,
+      -(enemy.x + eDrawW), enemy.y,
+      eDrawW, eDrawH);
   } else {
-    ctx.drawImage(enemyImage, sx, 0, frameW, frameH,
+    ctx.drawImage(eAnim.image, esx, 0, eFrameW, eFrameH,
       enemy.x, enemy.y,
-      drawW, drawH);
+      eDrawW, eDrawH);
   }
   ctx.restore();
 
-  // === Player ===
+  // === ผู้เล่น ===
   const playerScale = 1.4;
   const drawPlayerWidth = 100 * playerScale;
   const drawPlayerHeight = 64 * playerScale;
@@ -144,10 +127,21 @@ function draw(deltaTime) {
     playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
   }
 
-  // ศัตรูหันหน้าเข้า player
-  enemy.facingLeft = enemy.x > playerX;
+  // === AI enemy logic ===
+  const dist = enemy.x - playerX;
+  if (Math.abs(dist) > 5) {
+    if (Math.abs(dist) < 150) {
+      enemy.state = "attack";
+    } else {
+      enemy.state = "run";
+      enemy.x += dist > 0 ? -1.2 : 1.2;
+    }
+    enemy.facingLeft = dist > 0;
+  } else {
+    enemy.state = "idle";
+  }
 
-  // วาดผู้เล่น
+  // === Player ===
   const anim = animations[currentAnimation];
   const px = currentFrame * 100;
 
@@ -183,29 +177,11 @@ function gameLoop(timestamp) {
     }
   }
 
-  // === Enemy logic ===
-  const dist = Math.abs(enemy.x - playerX);
-  if (dist < 150) {
-    if (enemy.state !== "attack") {
-      enemy.state = "attack";
-      enemy.frame = 0;
-    }
-  } else {
-    enemy.state = "idle";
-  }
-
+  // === AI enemy frame ===
   enemy.frameTimer += deltaTime;
   if (enemy.frameTimer >= enemy.frameInterval) {
     enemy.frameTimer = 0;
-    if (enemy.state === "attack") {
-      enemy.frame++;
-      if (enemy.frame >= 4) {
-        enemy.frame = 0;
-        enemy.state = "idle";
-      }
-    } else {
-      enemy.frame = (enemy.frame + 1) % 6;
-    }
+    enemy.frame = (enemy.frame + 1) % animations[enemy.state].totalFrames;
   }
 
   // === Player animation state ===
@@ -231,15 +207,14 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
-// === โหลดภาพครบค่อยเริ่ม ===
+// === โหลดครบ ===
 let loaded = 0;
 function checkStart() {
   loaded++;
-  if (loaded >= 7) gameLoop(0);
+  if (loaded >= 5) gameLoop(0);
 }
 [
-  background, playerIdle, playerRun, playerAttack, playerJump,
-  enemyIdle, enemyAttack
+  background, playerIdle, playerRun, playerAttack, playerJump
 ].forEach(img => img.onload = checkStart);
 
 // === Touch controls ===
