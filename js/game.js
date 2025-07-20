@@ -96,7 +96,7 @@ function draw(deltaTime) {
   // วาดศัตรูก่อน player
   const drawEnemyWidth = enemy.width * enemy.scale;
   const drawEnemyHeight = enemy.height * enemy.scale;
-  enemy.y = groundY - drawEnemyHeight - 50;
+  enemy.y = groundY - drawEnemyHeight - 200;
   const enemySx = Math.min(enemy.frame * enemy.width, enemyIdle.width - enemy.width);
 
   ctx.drawImage(
