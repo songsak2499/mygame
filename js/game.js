@@ -1,6 +1,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+// ปรับขนาด canvas
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -8,40 +9,38 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
+// โหลดภาพ
 const background = new Image();
 background.src = "images/bg.png";
 
 const playerIdle = new Image();
-playerIdle.src = "images/player_idle.png";
+playerIdle.src = "images/player_idle.png"; // 400x64 (4 เฟรม)
 
 const playerRun = new Image();
-playerRun.src = "images/player_run.png";
+playerRun.src = "images/player_run.png"; // 700x64 (7 เฟรม)
 
 const playerAttack = new Image();
-playerAttack.src = "images/player_attack.png";
+playerAttack.src = "images/player_attack.png"; // 600x64 (6 เฟรม)
 
 const playerJump = new Image();
-playerJump.src = "images/player_jump.png";
+playerJump.src = "images/player_jump.png"; // 6 เฟรม (สมมุติ)
 
-// Enemy sprites
 const enemyIdle = new Image();
-enemyIdle.src = "images/enemy_idle.png"; // 6 เฟรม x 96px
+enemyIdle.src = "images/enemy_idle.png"; // 576x96 (6 เฟรม, 96px/เฟรม)
 
 const enemyAttack = new Image();
-enemyAttack.src = "images/attack.png";   // 4 เฟรม x 144px
+enemyAttack.src = "images/attack.png"; // 576x96 (4 เฟรม, 144px/เฟรม)
 
-// Player config
 let playerX = 100;
 let playerY = 0;
-const frameWidth = 100;
-const frameHeight = 64;
+
+let frameWidth = 100;
+let frameHeight = 64;
 let currentFrame = 0;
 let frameTimer = 0;
 const frameInterval = 150;
 
 let currentAnimation = "idle";
-let lastAnimation = currentAnimation;
-
 const animations = {
   idle: { image: playerIdle, totalFrames: 4 },
   run: { image: playerRun, totalFrames: 7 },
@@ -57,48 +56,61 @@ let isJumping = false;
 let jumpVelocity = 0;
 const gravity = 0.5;
 const jumpStrength = 10;
+
 let isAttacking = false;
 let attackFinished = true;
+
+let lastAnimation = currentAnimation;
 let runHoldTimer = 0;
 
-// Enemy config
+// ข้อมูลศัตรู
 let enemy = {
   x: 600,
   y: 0,
   frame: 0,
   frameTimer: 0,
   frameInterval: 200,
-  state: "idle", // idle or attack
+  state: "idle",
   facingLeft: true,
-  scale: 1.4,
-
-  idle: { width: 96, height: 96, totalFrames: 6 },
-  attack: { width: 144, height: 96, totalFrames: 4 }
+  scale: 1.4
 };
 
 function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
+  return Math.max(min, Math.min(max, value));
 }
 
 function draw(deltaTime) {
-  const bgScale = canvas.width / background.width;
-  const bgHeight = background.height * bgScale;
-  const bgY = (canvas.height - bgHeight) / 2;
-  const groundY = bgY + bgHeight;
+  const bgOriginalWidth = background.width;
+  const bgOriginalHeight = background.height;
+  const drawWidth = canvas.width;
+  const scale = drawWidth / bgOriginalWidth;
+  const drawHeight = bgOriginalHeight * scale;
+
+  const bgX = 0;
+  const bgY = (canvas.height - drawHeight) / 2;
+  const groundY = bgY + drawHeight;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(background, 0, bgY, canvas.width, bgHeight);
+  ctx.drawImage(background, bgX, bgY, drawWidth, drawHeight);
 
-  // ==== Draw Enemy ====
-  const state = enemy.state;
-  const sprite = state === "attack" ? enemy.attack : enemy.idle;
-  const enemyImage = state === "attack" ? enemyAttack : enemyIdle;
+  // === Enemy ===
+  let enemyImage = enemyIdle;
+  let frameCount = 6;
+  let frameWidth = 96;
+  let frameHeight = 96;
 
-  const drawEnemyWidth = sprite.width * enemy.scale;
-  const drawEnemyHeight = sprite.height * enemy.scale;
+  if (enemy.state === "attack") {
+    enemyImage = enemyAttack;
+    frameCount = 4;
+    frameWidth = 144;
+  }
+
+  const drawEnemyWidth = frameWidth * enemy.scale;
+  const drawEnemyHeight = frameHeight * enemy.scale;
+
   enemy.y = groundY - drawEnemyHeight;
 
-  const enemySx = Math.min(enemy.frame * sprite.width, enemyImage.width - sprite.width);
+  const sx = Math.min(enemy.frame * frameWidth, enemyImage.width - frameWidth);
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -106,23 +118,24 @@ function draw(deltaTime) {
     ctx.scale(-1, 1);
     ctx.drawImage(
       enemyImage,
-      enemySx, 0, sprite.width, sprite.height,
+      sx, 0, frameWidth, frameHeight,
       -(enemy.x + drawEnemyWidth), enemy.y,
       drawEnemyWidth, drawEnemyHeight
     );
   } else {
     ctx.drawImage(
       enemyImage,
-      enemySx, 0, sprite.width, sprite.height,
+      sx, 0, frameWidth, frameHeight,
       enemy.x, enemy.y,
       drawEnemyWidth, drawEnemyHeight
     );
   }
   ctx.restore();
 
-  // ==== Draw Player ====
-  const drawPlayerWidth = frameWidth * 1.4;
-  const drawPlayerHeight = frameHeight * 1.4;
+  // === Player ===
+  const playerScale = 1.4;
+  const drawPlayerWidth = 100 * playerScale;
+  const drawPlayerHeight = 64 * playerScale;
 
   if (isJumping) {
     jumpVelocity += gravity;
@@ -151,14 +164,24 @@ function draw(deltaTime) {
   enemy.facingLeft = enemy.x > playerX;
 
   const anim = animations[currentAnimation];
-  const sx = Math.min(currentFrame * frameWidth, anim.image.width - frameWidth);
+  const px = Math.min(currentFrame * 100, anim.image.width - 100);
 
   ctx.save();
   if (facingLeft) {
     ctx.scale(-1, 1);
-    ctx.drawImage(anim.image, sx, 0, frameWidth, frameHeight, -(playerX + drawPlayerWidth), playerY, drawPlayerWidth, drawPlayerHeight);
+    ctx.drawImage(
+      anim.image,
+      px, 0, 100, 64,
+      -(playerX + drawPlayerWidth), playerY,
+      drawPlayerWidth, drawPlayerHeight
+    );
   } else {
-    ctx.drawImage(anim.image, sx, 0, frameWidth, frameHeight, playerX, playerY, drawPlayerWidth, drawPlayerHeight);
+    ctx.drawImage(
+      anim.image,
+      px, 0, 100, 64,
+      playerX, playerY,
+      drawPlayerWidth, drawPlayerHeight
+    );
   }
   ctx.restore();
 }
@@ -174,14 +197,16 @@ function gameLoop(timestamp) {
   if (frameTimer >= frameInterval) {
     frameTimer = 0;
     currentFrame = (currentFrame + 1) % animations[currentAnimation].totalFrames;
+
     if (currentAnimation === "attack" && currentFrame === animations.attack.totalFrames - 1) {
       isAttacking = false;
       attackFinished = true;
     }
   }
 
-  const distance = Math.abs(enemy.x - playerX);
-  if (distance < 150) {
+  // Enemy logic
+  const dist = Math.abs(enemy.x - playerX);
+  if (dist < 150) {
     if (enemy.state !== "attack") {
       enemy.state = "attack";
       enemy.frame = 0;
@@ -193,20 +218,29 @@ function gameLoop(timestamp) {
   enemy.frameTimer += deltaTime;
   if (enemy.frameTimer >= enemy.frameInterval) {
     enemy.frameTimer = 0;
-    const sprite = enemy.state === "attack" ? enemy.attack : enemy.idle;
-    enemy.frame++;
-    if (enemy.frame >= sprite.totalFrames) {
-      enemy.frame = 0;
-      if (enemy.state === "attack") {
+    if (enemy.state === "attack") {
+      enemy.frame++;
+      if (enemy.frame >= 4) {
+        enemy.frame = 0;
         enemy.state = "idle";
       }
+    } else {
+      enemy.frame = (enemy.frame + 1) % 6;
     }
   }
 
-  if (isJumping) currentAnimation = "jump";
-  else if (isAttacking) currentAnimation = "attack";
-  else if (isRunningLeft || isRunningRight) currentAnimation = "run";
-  else if (runHoldTimer > 200) currentAnimation = "idle";
+  // Player anim state
+  if (isJumping) {
+    currentAnimation = "jump";
+  } else if (isAttacking) {
+    currentAnimation = "attack";
+    runHoldTimer = 0;
+  } else if (isRunningLeft || isRunningRight) {
+    currentAnimation = "run";
+    runHoldTimer = 0;
+  } else if (runHoldTimer > 200) {
+    currentAnimation = "idle";
+  }
 
   if (currentAnimation !== lastAnimation) {
     currentFrame = 0;
@@ -218,24 +252,31 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
+// โหลดครบแล้วค่อยเริ่มเกม
 let loaded = 0;
 function checkStart() {
   loaded++;
-  if (loaded === 8) gameLoop(0);
+  if (loaded >= 7) gameLoop(0);
 }
-[background, playerIdle, playerRun, playerAttack, playerJump, enemyIdle, enemyAttack].forEach(img => img.onload = checkStart);
+[
+  background, playerIdle, playerRun, playerAttack, playerJump,
+  enemyIdle, enemyAttack
+].forEach(img => img.onload = checkStart);
 
 // Touch controls
 document.getElementById("runButton").addEventListener("touchstart", () => isRunningRight = true);
 document.getElementById("runButton").addEventListener("touchend", () => isRunningRight = false);
+
 document.getElementById("leftButton").addEventListener("touchstart", () => isRunningLeft = true);
 document.getElementById("leftButton").addEventListener("touchend", () => isRunningLeft = false);
+
 document.getElementById("attackButton").addEventListener("touchstart", () => {
   if (!isAttacking) {
     isAttacking = true;
     attackFinished = false;
   }
 });
+
 document.getElementById("jumpButton").addEventListener("touchstart", () => {
   if (!isJumping) {
     isJumping = true;
@@ -243,12 +284,11 @@ document.getElementById("jumpButton").addEventListener("touchstart", () => {
   }
 });
 
-// Prevent zoom & scroll
+// ปิด zoom, scroll
 document.addEventListener("gesturestart", e => e.preventDefault(), { passive: false });
 document.addEventListener("touchend", e => {
-  if (new Date().getTime() - lastTouchEnd <= 300) e.preventDefault();
-  lastTouchEnd = new Date().getTime();
+  const now = Date.now();
+  if (now - (window.lastTouchEnd || 0) <= 300) e.preventDefault();
+  window.lastTouchEnd = now;
 }, { passive: false });
 document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
-
-let lastTouchEnd = 0;
