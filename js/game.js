@@ -27,6 +27,10 @@ playerJump.src = "images/player_jump.png";
 const enemyIdle = new Image();
 enemyIdle.src = "images/enemy_idle.png"; // 576x96 (6 เฟรม)
 
+// ศัตรู attack sprite (6 เฟรม)
+const enemyAttack = new Image();
+enemyAttack.src = "images/enemy_attack.png"; // 576x96 (6 เฟรม)
+
 let playerX = 100;
 let playerY = 0;
 
@@ -60,7 +64,7 @@ let runHoldTimer = 0;
 
 let lastAnimation = currentAnimation;
 
-// ศัตรู config (เพิ่ม facingLeft)
+// ศัตรู config พร้อมสถานะ state
 let enemy = {
   x: 600,
   y: 0,
@@ -69,9 +73,11 @@ let enemy = {
   frameInterval: 200,
   width: 96,
   height: 96,
-  scale: 1.9,
+  scale: 1.4,
   totalFrames: 6,
-  facingLeft: true // เริ่มหันซ้าย
+  attackFrames: 4,
+  facingLeft: true,
+  state: "idle" // "idle" หรือ "attack"
 };
 
 function clamp(value, min, max) {
@@ -100,23 +106,30 @@ function draw(deltaTime) {
 
   enemy.y = groundY - drawEnemyHeight;
 
-  // ป้องกัน sx เกินขนาด sprite sheet
-  const enemySx = Math.min(enemy.frame * enemy.width, enemyIdle.width - enemy.width);
+  // เลือก sprite ตามสถานะศัตรู
+  let enemyImage = enemyIdle;
+  let totalFrames = enemy.totalFrames;
+  if (enemy.state === "attack") {
+    enemyImage = enemyAttack;
+    totalFrames = enemy.attackFrames;
+  }
 
-  ctx.imageSmoothingEnabled = false; // ปิดเบลอภาพ
+  const enemySx = Math.min(enemy.frame * enemy.width, enemyImage.width - enemy.width);
+
+  ctx.imageSmoothingEnabled = false;
 
   ctx.save();
   if (enemy.facingLeft) {
     ctx.scale(-1, 1);
     ctx.drawImage(
-      enemyIdle,
+      enemyImage,
       enemySx, 0, enemy.width, enemy.height,
       -(enemy.x + drawEnemyWidth), enemy.y,
       drawEnemyWidth, drawEnemyHeight
     );
   } else {
     ctx.drawImage(
-      enemyIdle,
+      enemyImage,
       enemySx, 0, enemy.width, enemy.height,
       enemy.x, enemy.y,
       drawEnemyWidth, drawEnemyHeight
@@ -124,11 +137,11 @@ function draw(deltaTime) {
   }
   ctx.restore();
 
+  // player draw
   const scaleFactor = 1.4;
   const drawPlayerWidth = frameWidth * scaleFactor;
   const drawPlayerHeight = frameHeight * scaleFactor;
 
-  // เคลื่อนที่แนว Y ขณะกระโดด
   if (isJumping) {
     jumpVelocity += gravity;
     playerY += jumpVelocity;
@@ -142,7 +155,6 @@ function draw(deltaTime) {
     playerY = groundY - drawPlayerHeight;
   }
 
-  // เคลื่อนที่แนว X ถ้าไม่โจมตี
   if (!isAttacking) {
     if (isRunningRight) {
       playerX += moveSpeed;
@@ -155,10 +167,9 @@ function draw(deltaTime) {
     playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
   }
 
-  // อัปเดตทิศทางศัตรูให้หันหน้า player
+  // ศัตรูหันหน้า player
   enemy.facingLeft = (enemy.x > playerX);
 
-  // เลือก sprite animation ปัจจุบัน player
   const anim = animations[currentAnimation];
   const sx = Math.min(currentFrame * frameWidth, anim.image.width - frameWidth);
 
@@ -195,18 +206,37 @@ function gameLoop(timestamp) {
     frameTimer -= frameInterval;
     currentFrame = (currentFrame + 1) % animations[currentAnimation].totalFrames;
 
-    // จบแอนิเมชันโจมตีเมื่อถึงเฟรมสุดท้าย
     if (currentAnimation === "attack" && currentFrame === animations.attack.totalFrames - 1) {
       isAttacking = false;
       attackFinished = true;
     }
   }
 
+  // เช็คระยะห่างศัตรูกับผู้เล่น เพื่อสั่งโจมตี
+  const distanceToPlayer = Math.abs(enemy.x - playerX);
+
+  if (distanceToPlayer < 150) {
+    if (enemy.state !== "attack") {
+      enemy.state = "attack";
+      enemy.frame = 0;
+    }
+  } else {
+    enemy.state = "idle";
+  }
+
   // อัปเดตเฟรมศัตรู
   enemy.frameTimer += deltaTime;
   if (enemy.frameTimer >= enemy.frameInterval) {
     enemy.frameTimer = 0;
-    enemy.frame = (enemy.frame + 1) % enemy.totalFrames;
+    if (enemy.state === "attack") {
+      enemy.frame++;
+      if (enemy.frame >= enemy.attackFrames) {
+        enemy.frame = 0;
+        enemy.state = "idle";
+      }
+    } else {
+      enemy.frame = (enemy.frame + 1) % enemy.totalFrames;
+    }
   }
 
   // กำหนดแอนิเมชัน player ตามสถานะ
@@ -222,7 +252,6 @@ function gameLoop(timestamp) {
     currentAnimation = "idle";
   }
 
-  // รีเซ็ตเฟรม player ถ้าแอนิเมชันเปลี่ยน
   if (currentAnimation !== lastAnimation) {
     currentFrame = 0;
     frameTimer = 0;
@@ -236,7 +265,7 @@ function gameLoop(timestamp) {
 let loaded = 0;
 function checkStart() {
   loaded++;
-  if (loaded === 6) gameLoop(0);
+  if (loaded === 8) gameLoop(0); // เพิ่มจาก 6 เป็น 8 เพราะเพิ่ม enemyAttack
 }
 background.onload = checkStart;
 playerIdle.onload = checkStart;
@@ -244,6 +273,7 @@ playerRun.onload = checkStart;
 playerAttack.onload = checkStart;
 playerJump.onload = checkStart;
 enemyIdle.onload = checkStart;
+enemyAttack.onload = checkStart; // โหลด sprite ศัตรูโจมตี
 
 // ปุ่มควบคุมเดินขวา
 const runBtn = document.getElementById("runButton");
