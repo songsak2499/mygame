@@ -60,17 +60,18 @@ let runHoldTimer = 0;
 
 let lastAnimation = currentAnimation;
 
-// ศัตรู config (แก้ขนาดและ scale ให้ถูกต้อง)
+// ศัตรู config (เพิ่ม facingLeft)
 let enemy = {
   x: 600,
   y: 0,
   frame: 0,
   frameTimer: 0,
   frameInterval: 200,
-  width: 96,    // ขนาด 1 เฟรม (576 / 6)
-  height: 96,   // ความสูงเฟรมศัตรู
-  scale: 1.4,   // ปรับให้ใหญ่ขึ้นเท่าผู้เล่น
-  totalFrames: 6
+  width: 96,
+  height: 96,
+  scale: 1.4,
+  totalFrames: 6,
+  facingLeft: true // เริ่มหันซ้าย
 };
 
 function clamp(value, min, max) {
@@ -97,7 +98,6 @@ function draw(deltaTime) {
   const drawEnemyWidth = enemy.width * enemy.scale;
   const drawEnemyHeight = enemy.height * enemy.scale;
 
-  // ศัตรูยืนบนพื้น
   enemy.y = groundY - drawEnemyHeight;
 
   // ป้องกัน sx เกินขนาด sprite sheet
@@ -105,12 +105,24 @@ function draw(deltaTime) {
 
   ctx.imageSmoothingEnabled = false; // ปิดเบลอภาพ
 
-  ctx.drawImage(
-    enemyIdle,
-    enemySx, 0, enemy.width, enemy.height,
-    enemy.x, enemy.y,
-    drawEnemyWidth, drawEnemyHeight
-  );
+  ctx.save();
+  if (enemy.facingLeft) {
+    ctx.scale(-1, 1);
+    ctx.drawImage(
+      enemyIdle,
+      enemySx, 0, enemy.width, enemy.height,
+      -(enemy.x + drawEnemyWidth), enemy.y,
+      drawEnemyWidth, drawEnemyHeight
+    );
+  } else {
+    ctx.drawImage(
+      enemyIdle,
+      enemySx, 0, enemy.width, enemy.height,
+      enemy.x, enemy.y,
+      drawEnemyWidth, drawEnemyHeight
+    );
+  }
+  ctx.restore();
 
   const scaleFactor = 1.4;
   const drawPlayerWidth = frameWidth * scaleFactor;
@@ -140,9 +152,11 @@ function draw(deltaTime) {
       playerX -= moveSpeed;
       facingLeft = true;
     }
-
     playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
   }
+
+  // อัปเดตทิศทางศัตรูให้หันหน้า player
+  enemy.facingLeft = (enemy.x > playerX);
 
   // เลือก sprite animation ปัจจุบัน player
   const anim = animations[currentAnimation];
