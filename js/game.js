@@ -69,7 +69,7 @@ let enemy = {
   frameInterval: 200,
   width: 96,
   height: 96,
-  scale: 1.4,
+  scale: 1.9,
   totalFrames: 6,
   facingLeft: true // เริ่มหันซ้าย
 };
