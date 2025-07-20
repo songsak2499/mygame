@@ -12,28 +12,27 @@ const background = new Image();
 background.src = "images/bg.png";
 
 const playerIdle = new Image();
-playerIdle.src = "images/player_idle.png"; // 400×64 (4 เฟรม)
+playerIdle.src = "images/player_idle.png";
 
 const playerRun = new Image();
-playerRun.src = "images/player_run.png";  // 700×64 (7 เฟรม)
+playerRun.src = "images/player_run.png";
 
 const playerAttack = new Image();
-playerAttack.src = "images/player_attack.png"; // 600×64 (6 เฟรม)
+playerAttack.src = "images/player_attack.png";
 
 const playerJump = new Image();
 playerJump.src = "images/player_jump.png";
 
-// ศัตรู idle sprite (6 เฟรม)
+// Enemy sprites
 const enemyIdle = new Image();
-enemyIdle.src = "images/enemy_idle.png"; // 576x96 (6 เฟรม)
+enemyIdle.src = "images/enemy_idle.png"; // 6 เฟรม x 96px
 
-// ศัตรู attack sprite (6 เฟรม)
 const enemyAttack = new Image();
-enemyAttack.src = "images/attack.png"; // 576x96 (6 เฟรม)
+enemyAttack.src = "images/attack.png";   // 4 เฟรม x 144px
 
+// Player config
 let playerX = 100;
 let playerY = 0;
-
 const frameWidth = 100;
 const frameHeight = 64;
 let currentFrame = 0;
@@ -41,6 +40,8 @@ let frameTimer = 0;
 const frameInterval = 150;
 
 let currentAnimation = "idle";
+let lastAnimation = currentAnimation;
+
 const animations = {
   idle: { image: playerIdle, totalFrames: 4 },
   run: { image: playerRun, totalFrames: 7 },
@@ -56,28 +57,23 @@ let isJumping = false;
 let jumpVelocity = 0;
 const gravity = 0.5;
 const jumpStrength = 10;
-
 let isAttacking = false;
 let attackFinished = true;
-
 let runHoldTimer = 0;
 
-let lastAnimation = currentAnimation;
-
-// ศัตรู config พร้อมสถานะ state
+// Enemy config
 let enemy = {
   x: 600,
   y: 0,
   frame: 0,
   frameTimer: 0,
   frameInterval: 200,
-  width: 96,
-  height: 96,
-  scale: 1.4,
-  totalFrames: 6,
-  attackFrames: 4,
+  state: "idle", // idle or attack
   facingLeft: true,
-  state: "idle" // "idle" หรือ "attack"
+  scale: 1.4,
+
+  idle: { width: 96, height: 96, totalFrames: 6 },
+  attack: { width: 144, height: 96, totalFrames: 4 }
 };
 
 function clamp(value, min, max) {
@@ -85,67 +81,52 @@ function clamp(value, min, max) {
 }
 
 function draw(deltaTime) {
-  const bgOriginalWidth = background.width;
-  const bgOriginalHeight = background.height;
-
-  const drawWidth = canvas.width;
-  const scale = drawWidth / bgOriginalWidth;
-  const drawHeight = bgOriginalHeight * scale;
-
-  const bgX = 0;
-  const bgY = (canvas.height - drawHeight) / 2;
+  const bgScale = canvas.width / background.width;
+  const bgHeight = background.height * bgScale;
+  const bgY = (canvas.height - bgHeight) / 2;
+  const groundY = bgY + bgHeight;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(background, bgX, bgY, drawWidth, drawHeight);
+  ctx.drawImage(background, 0, bgY, canvas.width, bgHeight);
 
-  const groundY = bgY + drawHeight;
+  // ==== Draw Enemy ====
+  const state = enemy.state;
+  const sprite = state === "attack" ? enemy.attack : enemy.idle;
+  const enemyImage = state === "attack" ? enemyAttack : enemyIdle;
 
-  // วาดศัตรูก่อน player
-  const drawEnemyWidth = enemy.width * enemy.scale;
-  const drawEnemyHeight = enemy.height * enemy.scale;
-
+  const drawEnemyWidth = sprite.width * enemy.scale;
+  const drawEnemyHeight = sprite.height * enemy.scale;
   enemy.y = groundY - drawEnemyHeight;
 
-  // เลือก sprite ตามสถานะศัตรู
-  let enemyImage = enemyIdle;
-  let totalFrames = enemy.totalFrames;
-  if (enemy.state === "attack") {
-    enemyImage = enemyAttack;
-    totalFrames = enemy.attackFrames;
-  }
-
-  const enemySx = Math.min(enemy.frame * enemy.width, enemyImage.width - enemy.width);
-
-  ctx.imageSmoothingEnabled = false;
+  const enemySx = Math.min(enemy.frame * sprite.width, enemyImage.width - sprite.width);
 
   ctx.save();
+  ctx.imageSmoothingEnabled = false;
   if (enemy.facingLeft) {
     ctx.scale(-1, 1);
     ctx.drawImage(
       enemyImage,
-      enemySx, 0, enemy.width, enemy.height,
+      enemySx, 0, sprite.width, sprite.height,
       -(enemy.x + drawEnemyWidth), enemy.y,
       drawEnemyWidth, drawEnemyHeight
     );
   } else {
     ctx.drawImage(
       enemyImage,
-      enemySx, 0, enemy.width, enemy.height,
+      enemySx, 0, sprite.width, sprite.height,
       enemy.x, enemy.y,
       drawEnemyWidth, drawEnemyHeight
     );
   }
   ctx.restore();
 
-  // player draw
-  const scaleFactor = 1.4;
-  const drawPlayerWidth = frameWidth * scaleFactor;
-  const drawPlayerHeight = frameHeight * scaleFactor;
+  // ==== Draw Player ====
+  const drawPlayerWidth = frameWidth * 1.4;
+  const drawPlayerHeight = frameHeight * 1.4;
 
   if (isJumping) {
     jumpVelocity += gravity;
     playerY += jumpVelocity;
-
     if (playerY >= groundY - drawPlayerHeight) {
       playerY = groundY - drawPlayerHeight;
       isJumping = false;
@@ -167,8 +148,7 @@ function draw(deltaTime) {
     playerX = clamp(playerX, 0, canvas.width - drawPlayerWidth);
   }
 
-  // ศัตรูหันหน้า player
-  enemy.facingLeft = (enemy.x > playerX);
+  enemy.facingLeft = enemy.x > playerX;
 
   const anim = animations[currentAnimation];
   const sx = Math.min(currentFrame * frameWidth, anim.image.width - frameWidth);
@@ -176,19 +156,9 @@ function draw(deltaTime) {
   ctx.save();
   if (facingLeft) {
     ctx.scale(-1, 1);
-    ctx.drawImage(
-      anim.image,
-      sx, 0, frameWidth, frameHeight,
-      -(playerX + drawPlayerWidth), playerY,
-      drawPlayerWidth, drawPlayerHeight
-    );
+    ctx.drawImage(anim.image, sx, 0, frameWidth, frameHeight, -(playerX + drawPlayerWidth), playerY, drawPlayerWidth, drawPlayerHeight);
   } else {
-    ctx.drawImage(
-      anim.image,
-      sx, 0, frameWidth, frameHeight,
-      playerX, playerY,
-      drawPlayerWidth, drawPlayerHeight
-    );
+    ctx.drawImage(anim.image, sx, 0, frameWidth, frameHeight, playerX, playerY, drawPlayerWidth, drawPlayerHeight);
   }
   ctx.restore();
 }
@@ -201,21 +171,17 @@ function gameLoop(timestamp) {
   frameTimer += deltaTime;
   runHoldTimer += deltaTime;
 
-  // อัปเดตเฟรม player
   if (frameTimer >= frameInterval) {
-    frameTimer -= frameInterval;
+    frameTimer = 0;
     currentFrame = (currentFrame + 1) % animations[currentAnimation].totalFrames;
-
     if (currentAnimation === "attack" && currentFrame === animations.attack.totalFrames - 1) {
       isAttacking = false;
       attackFinished = true;
     }
   }
 
-  // เช็คระยะห่างศัตรูกับผู้เล่น เพื่อสั่งโจมตี
-  const distanceToPlayer = Math.abs(enemy.x - playerX);
-
-  if (distanceToPlayer < 150) {
+  const distance = Math.abs(enemy.x - playerX);
+  if (distance < 150) {
     if (enemy.state !== "attack") {
       enemy.state = "attack";
       enemy.frame = 0;
@@ -224,33 +190,23 @@ function gameLoop(timestamp) {
     enemy.state = "idle";
   }
 
-  // อัปเดตเฟรมศัตรู
   enemy.frameTimer += deltaTime;
   if (enemy.frameTimer >= enemy.frameInterval) {
     enemy.frameTimer = 0;
-    if (enemy.state === "attack") {
-      enemy.frame++;
-      if (enemy.frame >= enemy.attackFrames) {
-        enemy.frame = 0;
+    const sprite = enemy.state === "attack" ? enemy.attack : enemy.idle;
+    enemy.frame++;
+    if (enemy.frame >= sprite.totalFrames) {
+      enemy.frame = 0;
+      if (enemy.state === "attack") {
         enemy.state = "idle";
       }
-    } else {
-      enemy.frame = (enemy.frame + 1) % enemy.totalFrames;
     }
   }
 
-  // กำหนดแอนิเมชัน player ตามสถานะ
-  if (isJumping) {
-    currentAnimation = "jump";
-  } else if (isAttacking) {
-    currentAnimation = "attack";
-    runHoldTimer = 0;
-  } else if (isRunningLeft || isRunningRight) {
-    currentAnimation = "run";
-    runHoldTimer = 0;
-  } else if (runHoldTimer > 200) {
-    currentAnimation = "idle";
-  }
+  if (isJumping) currentAnimation = "jump";
+  else if (isAttacking) currentAnimation = "attack";
+  else if (isRunningLeft || isRunningRight) currentAnimation = "run";
+  else if (runHoldTimer > 200) currentAnimation = "idle";
 
   if (currentAnimation !== lastAnimation) {
     currentFrame = 0;
@@ -265,64 +221,34 @@ function gameLoop(timestamp) {
 let loaded = 0;
 function checkStart() {
   loaded++;
-  if (loaded === 8) gameLoop(0); // เพิ่มจาก 6 เป็น 8 เพราะเพิ่ม enemyAttack
+  if (loaded === 8) gameLoop(0);
 }
-background.onload = checkStart;
-playerIdle.onload = checkStart;
-playerRun.onload = checkStart;
-playerAttack.onload = checkStart;
-playerJump.onload = checkStart;
-enemyIdle.onload = checkStart;
-enemyAttack.onload = checkStart; // โหลด sprite ศัตรูโจมตี
+[background, playerIdle, playerRun, playerAttack, playerJump, enemyIdle, enemyAttack].forEach(img => img.onload = checkStart);
 
-// ปุ่มควบคุมเดินขวา
-const runBtn = document.getElementById("runButton");
-runBtn.addEventListener("touchstart", () => { isRunningRight = true; });
-runBtn.addEventListener("touchend", () => { isRunningRight = false; });
-runBtn.addEventListener("touchcancel", () => { isRunningRight = false; });
-
-// ปุ่มควบคุมเดินซ้าย
-const leftBtn = document.getElementById("leftButton");
-leftBtn.addEventListener("touchstart", () => { isRunningLeft = true; });
-leftBtn.addEventListener("touchend", () => { isRunningLeft = false; });
-leftBtn.addEventListener("touchcancel", () => { isRunningLeft = false; });
-
-// ปุ่มโจมตี
-const attackBtn = document.getElementById("attackButton");
-attackBtn.addEventListener("touchstart", () => {
+// Touch controls
+document.getElementById("runButton").addEventListener("touchstart", () => isRunningRight = true);
+document.getElementById("runButton").addEventListener("touchend", () => isRunningRight = false);
+document.getElementById("leftButton").addEventListener("touchstart", () => isRunningLeft = true);
+document.getElementById("leftButton").addEventListener("touchend", () => isRunningLeft = false);
+document.getElementById("attackButton").addEventListener("touchstart", () => {
   if (!isAttacking) {
     isAttacking = true;
     attackFinished = false;
   }
 });
-attackBtn.addEventListener("touchend", () => { });
-attackBtn.addEventListener("touchcancel", () => { });
-
-// ปุ่มกระโดด
-const jumpBtn = document.getElementById("jumpButton");
-jumpBtn.addEventListener("touchstart", () => {
+document.getElementById("jumpButton").addEventListener("touchstart", () => {
   if (!isJumping) {
     isJumping = true;
     jumpVelocity = -jumpStrength;
   }
 });
 
-// ปิด pinch zoom
-document.addEventListener("gesturestart", function (e) {
-  e.preventDefault();
+// Prevent zoom & scroll
+document.addEventListener("gesturestart", e => e.preventDefault(), { passive: false });
+document.addEventListener("touchend", e => {
+  if (new Date().getTime() - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = new Date().getTime();
 }, { passive: false });
+document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
 
-// ปิด double tap zoom
 let lastTouchEnd = 0;
-document.addEventListener("touchend", function (event) {
-  const now = new Date().getTime();
-  if (now - lastTouchEnd <= 300) {
-    event.preventDefault();
-  }
-  lastTouchEnd = now;
-}, { passive: false });
-
-// ปิด scroll ด้วยนิ้ว
-document.addEventListener("touchmove", function (e) {
-  e.preventDefault();
-}, { passive: false });
