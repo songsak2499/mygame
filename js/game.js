@@ -28,7 +28,7 @@ const enemyIdle = new Image();
 enemyIdle.src = "images/enemy_idle.png"; // 6 เฟรม, 96px/เฟรม
 
 const enemyAttack = new Image();
-enemyAttack.src = "images/enemy_attack.png"; // 4 เฟรม, 144px/เฟรม
+enemyAttack.src = "images/ck.png"; // 4 เฟรม, 144px/เฟรม
 
 // === Main player ===
 let playerX = 100;
