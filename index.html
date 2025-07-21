@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <!-- ✅ viewport ควบคุมการขยาย-ย่อหน้าจอ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>เกมนินจา</title>
+  
+  <!-- ✅ ลิงก์ไปไฟล์ CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+  
+  <!-- ✅ ตั้งค่าเบื้องต้นป้องกันขนาดไม่เท่ากัน -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #touchControls, #attackButton, #jumpButton {
+      position: absolute;
+      z-index: 10;
+    }
+    #attackButton {
+      right: 80px;
+      bottom: 20px;
+    }
+    #jumpButton {
+      right: 10px;
+      bottom: 20px;
+    }
+    #touchControls {
+      left: 10px;
+      bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- ✅ ปุ่มทัชสำหรับมือถือ -->
+  <div id="touchControls">
+    <button id="leftButton">←</button>
+    <button id="runButton">→</button>
+  </div>  
+    
+  <!-- ✅ ปุ่มโจมตีและกระโดด -->
+  <button id="attackButton">โจมตี</button>
+  <button id="jumpButton">กระโดด</button>
+
+  <!-- ✅ สคริปต์เกมแบบโมดูล -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
