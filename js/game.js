@@ -37,6 +37,7 @@ let playerFrame = 0;
 let playerFrameTimer = 0;
 const playerFrameInterval = 150;
 let playerAnimation = "idle";
+let lastAnimation = "idle"; // ✅ เพิ่มตัวแปรนี้เพื่อแก้ error
 let playerFacingLeft = false;
 let isPlayerRunningLeft = false;
 let isPlayerRunningRight = false;
@@ -71,18 +72,16 @@ function draw(deltaTime) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(background, 0, (canvas.height - drawHeight) / 2, canvas.width, drawHeight);
 
-  // --- วาด enemy (ผู้เล่นอีกตัว) ---
+  // --- วาด enemy ---
   let enemyImage = enemyIdle;
-  let frameCount = 6;
   let frameW = 96;
   let frameH = 96;
   let offsetX = 0;
 
   if (enemy.state === "attack") {
     enemyImage = enemyAttack;
-    frameCount = 4;
     frameW = 144;
-    offsetX = (frameW - 96) * enemy.scale; // ชดเชยตำแหน่งตอนฟลิปภาพ
+    offsetX = (frameW - 96) * enemy.scale;
   }
 
   const drawEnemyW = frameW * enemy.scale;
@@ -142,7 +141,6 @@ function draw(deltaTime) {
   // enemy หันหน้าเข้าหาผู้เล่น
   enemy.facingLeft = enemy.x > playerX;
 
-  // player animation frame
   const playerAnimData = {
     idle: { image: playerIdle, totalFrames: 4 },
     run: { image: playerRun, totalFrames: 7 },
@@ -179,18 +177,26 @@ function gameLoop(timestamp) {
   const deltaTime = timestamp - lastTime;
   lastTime = timestamp;
 
+  // player animation data (ย้ายมาใช้ใน loop ให้ไม่มี undefined)
+  const playerAnimData = {
+    idle: { image: playerIdle, totalFrames: 4 },
+    run: { image: playerRun, totalFrames: 7 },
+    attack: { image: playerAttack, totalFrames: 6 },
+    jump: { image: playerJump, totalFrames: 6 },
+  };
+
   // player frame update
   playerFrameTimer += deltaTime;
   runHoldTimer += deltaTime;
   if (playerFrameTimer >= playerFrameInterval) {
     playerFrameTimer = 0;
-    playerFrame = (playerFrame + 1) % (playerAnimation === "attack" ? 6 : playerAnimData[playerAnimation].totalFrames);
+    playerFrame = (playerFrame + 1) % playerAnimData[playerAnimation].totalFrames;
     if (playerAnimation === "attack" && playerFrame === 5) {
       isPlayerAttacking = false;
     }
   }
 
-  // enemy AI logic: โจมตีเมื่อเข้าใกล้ player
+  // enemy AI
   const dist = Math.abs(enemy.x - playerX);
   if (dist < 150) {
     if (enemy.state !== "attack") {
@@ -201,7 +207,6 @@ function gameLoop(timestamp) {
     enemy.state = "idle";
   }
 
-  // enemy frame update
   enemy.frameTimer += deltaTime;
   if (enemy.frameTimer >= enemy.frameInterval) {
     enemy.frameTimer = 0;
@@ -216,7 +221,7 @@ function gameLoop(timestamp) {
     }
   }
 
-  // player animation state update
+  // update player state
   if (isPlayerJumping) {
     playerAnimation = "jump";
   } else if (isPlayerAttacking) {
