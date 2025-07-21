@@ -244,7 +244,7 @@ function gameLoop(timestamp) {
 let loaded = 0;
 function checkStart() {
   loaded++;
-  if (loaded >= 8) gameLoop(0);
+  if (loaded >= 7) gameLoop(0);
 }
 [
   background, playerIdle, playerRun, playerAttack, playerJump,
