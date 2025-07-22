@@ -1,58 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Pivot Point Demo</title>
+  <meta charset="UTF-8" />
+  <title>โบกมือด้วยจุดหมุน</title>
   <style>
     canvas {
-      background: #f0f0f0;
-      border: 1px solid black;
+      background: #def;
       display: block;
       margin: auto;
-      margin-top: 30px;
+      border: 1px solid #888;
     }
   </style>
 </head>
 <body>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
 
-<canvas id="canvas" width="400" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-<script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+    const images = {
+      head: new Image(),
+      body: new Image(),
+      arm: new Image()
+    };
 
-const image = new Image();
-image.src = "arm.png"; // ใช้ภาพของคุณเอง เช่น arm.png
+    let loaded = 0;
+    const total = 3;
 
-// จุดหมุนในภาพ (เช่น บนสุดของแขน)
-const pivot = { x: 20, y: 0 }; // ปรับให้ตรงไหล่ในภาพจริง
+    for (let key in images) {
+      images[key].src = key + ".png"; // ต้องมี head.png, body.png, arm.png อยู่ในโฟลเดอร์เดียวกัน
+      images[key].onload = () => {
+        loaded++;
+        if (loaded === total) start();
+      };
+    }
 
-// จุดแสดงผลบนหน้าจอ
-const position = { x: 200, y: 200 };
+    function start() {
+      let angle = 0;
+      let direction = 1;
 
-image.onload = () => {
-  let angle = 0;
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
 
-    ctx.save();
+        // วาดลำตัว
+        ctx.drawImage(images.body, centerX - images.body.width / 2, centerY - 40);
 
-    // วางจุดศูนย์กลางที่เราต้องการ
-    ctx.translate(position.x, position.y);
-    ctx.rotate(angle);
+        // วาดแขนขวา (หมุนได้)
+        ctx.save();
+        ctx.translate(centerX + 25, centerY - 25); // จุดหมุนที่หัวไหล่ขวา
+        ctx.rotate(angle);
+        ctx.drawImage(images.arm, -5, 0); // วาดแขนให้ปลายแขนขยับ
+        ctx.restore();
 
-    // วาดภาพโดยให้จุดหมุนตรงกับตำแหน่งที่ translate มา
-    ctx.drawImage(image, -pivot.x, -pivot.y);
+        // วาดหัว
+        ctx.drawImage(images.head, centerX - images.head.width / 2, centerY - 90);
 
-    ctx.restore();
+        // อัปเดตมุมแขนให้โบกไปมา
+        angle += 0.02 * direction;
+        if (angle > 0.5 || angle < -0.5) direction *= -1;
 
-    angle += 0.03; // เร่งความเร็วหมุน (radians)
-    requestAnimationFrame(draw);
-  }
+        requestAnimationFrame(draw);
+      }
 
-  draw();
-};
-</script>
-
+      draw();
+    }
+  </script>
 </body>
 </html>
