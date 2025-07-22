@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pivot Point Demo</title>
+  <style>
+    canvas {
+      background: #f0f0f0;
+      border: 1px solid black;
+      display: block;
+      margin: auto;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas" width="400" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const image = new Image();
+image.src = "arm.png"; // ใช้ภาพของคุณเอง เช่น arm.png
+
+// จุดหมุนในภาพ (เช่น บนสุดของแขน)
+const pivot = { x: 20, y: 0 }; // ปรับให้ตรงไหล่ในภาพจริง
+
+// จุดแสดงผลบนหน้าจอ
+const position = { x: 200, y: 200 };
+
+image.onload = () => {
+  let angle = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+
+    // วางจุดศูนย์กลางที่เราต้องการ
+    ctx.translate(position.x, position.y);
+    ctx.rotate(angle);
+
+    // วาดภาพโดยให้จุดหมุนตรงกับตำแหน่งที่ translate มา
+    ctx.drawImage(image, -pivot.x, -pivot.y);
+
+    ctx.restore();
+
+    angle += 0.03; // เร่งความเร็วหมุน (radians)
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+};
+</script>
+
+</body>
+</html>
